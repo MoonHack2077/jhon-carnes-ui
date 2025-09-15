@@ -39,32 +39,31 @@ const InventoryPage = () => {
   const activeInventory = inventories.find(inv => inv.status === 'ACTIVE');
 
   const handleDayClick = (date) => {
-    const inventoryForDay = inventories.find(inv => new Date(inv.date).toDateString() === date.toDateString());
-    
-    if (inventoryForDay) {
-      // Si hay inventario para ese día, navega para verlo/editarlo
-      navigate(`/inventory/form/${inventoryForDay._id}`);
+  const dateString = date.toISOString().split('T')[0];
+  const inventoryForDay = inventories.find(inv => inv.date.startsWith(dateString));
+  
+  if (inventoryForDay) {
+    navigate(`/inventory/form/${inventoryForDay._id}`);
+  } else {
+    if (activeInventory) {
+      alert(`Debes cerrar el inventario activo del día ${new Date(activeInventory.date).toLocaleDateString()} antes de crear uno nuevo.`);
     } else {
-      // Si el día está vacío, es para crear uno nuevo
-      if (activeInventory) {
-        alert(`Debes cerrar el inventario activo del día ${new Date(activeInventory.date).toLocaleDateString()} antes de crear uno nuevo.`);
-      } else {
-        // Navega para crear, pasando la fecha en formato ISO
-        navigate(`/inventory/form/new?date=${date.toISOString().split('T')[0]}`);
-      }
+      navigate(`/inventory/form/new?date=${dateString}`);
     }
-  };
+  }
+};
 
-  const tileContent = ({ date, view }) => {
-    if (view === 'month') {
-      const inventoryForDay = inventories.find(inv => new Date(inv.date).toDateString() === date.toDateString());
-      if (inventoryForDay) {
-        const color = inventoryForDay.status === 'ACTIVE' ? '#FFC700' : '#FF1E1E'; // Amarillo o Rojo
-        return <Dot style={{ backgroundColor: color }} />;
-      }
+const tileContent = ({ date, view }) => {
+  if (view === 'month') {
+    const dateString = date.toISOString().split('T')[0];
+    const inventoryForDay = inventories.find(inv => inv.date.startsWith(dateString));
+    if (inventoryForDay) {
+      const color = inventoryForDay.status === 'ACTIVE' ? '#FFC700' : '#FF1E1E';
+      return <Dot style={{ backgroundColor: color }} />;
     }
-    return null;
-  };
+  }
+  return null;
+};
 
   return (
     <div>

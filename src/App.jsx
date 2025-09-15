@@ -10,6 +10,9 @@ import InventoryPage from './pages/InventoryPage';
 import ProductsPage from './pages/ProductsPage';
 import UsersPage from './pages/UsersPage';
 import PurchasesPage from './pages/PurchasesPage';
+import Modal from 'react-modal';
+
+Modal.setAppElement('#root'); // '#root' es el ID del div principal en tu index.html
 
 function App() {
   return (

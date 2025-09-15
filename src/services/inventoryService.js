@@ -40,3 +40,8 @@ export const getInventoryById = async (id) => {
   const response = await apiClient.get(`/inventory/${id}`, { headers: getAuthHeaders() });
   return response.data;
 };
+
+export const closeInventory = async (id, inventoryData) => { // 👈 Añade inventoryData
+  const response = await apiClient.patch(`/inventory/${id}/close`, inventoryData, { headers: getAuthHeaders() }); // 👈 Pasa los datos
+  return response.data;
+};

@@ -44,7 +44,7 @@ const PurchasesPage = () => {
   return (
     <PurchasesContainer>
       <Title>Gestión de Compras y Gastos</Title>
-      
+
       <Table>
         <thead>
           <tr>
@@ -57,7 +57,12 @@ const PurchasesPage = () => {
         <tbody>
           {purchases.map(purchase => (
             <tr key={purchase._id}>
-              <Td>{new Date(purchase.date).toLocaleDateString()}</Td>
+              <Td>
+                {(() => {
+                  const [year, month, day] = purchase.date.split('T')[0].split('-');
+                  return `${day}/${month}/${year}`;
+                })()}
+              </Td>
               <Td>{purchase.supplier}</Td>
               <Td>{purchase.items.map(item => item.name).join(', ')}</Td>
               <Td>${purchase.total.toLocaleString('es-CO')}</Td>
