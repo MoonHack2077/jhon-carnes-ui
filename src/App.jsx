@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Layout from './pages/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
+import InventoryForm from './components/InventoryForm';
 import InventoryPage from './pages/InventoryPage';
 import ProductsPage from './pages/ProductsPage';
 import UsersPage from './pages/UsersPage';
@@ -22,7 +23,8 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
-          <Route path="/inventory" element={<InventoryPage />} />
+          <Route path="/inventory" element={<InventoryPage />} /> {/* Calendario */}
+          <Route path="/inventory/form/:id" element={<InventoryForm />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/purchases" element={<PurchasesPage />} />

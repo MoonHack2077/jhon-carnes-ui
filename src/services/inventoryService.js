@@ -30,3 +30,13 @@ export const updateInventory = async (id, inventoryData) => {
   const response = await apiClient.put(`/inventory/${id}`, inventoryData, { headers: getAuthHeaders() });
   return response.data;
 };
+
+export const getInventoriesByMonth = async (year, month) => {
+  const response = await apiClient.get(`/inventory/month?year=${year}&month=${month}`, { headers: getAuthHeaders() });
+  return response.data;
+};
+
+export const getInventoryById = async (id) => {
+  const response = await apiClient.get(`/inventory/${id}`, { headers: getAuthHeaders() });
+  return response.data;
+};

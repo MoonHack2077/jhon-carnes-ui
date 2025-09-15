@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import 'react-calendar/dist/Calendar.css';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components'; // 👈 1. Importa ThemeProvider
 import { AuthProvider } from './context/AuthContext';

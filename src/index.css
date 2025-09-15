@@ -66,3 +66,20 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Estilo para el día de HOY */
+.react-calendar__tile--now {
+  background: #4a4a4a; /* Un color de fondo sutil que no opaque tu punto */
+  color: #FFC700; /* Un color de texto para resaltar que es hoy */
+}
+
+/* Estilo para el día que el usuario SELECCIONA con un clic */
+.react-calendar__tile--active {
+  background: #FF1E1E !important; /* Usa tu color primario para la selección */
+  color: white !important;
+}
+
+/* Estilo para cuando el mouse pasa por encima de un día */
+.react-calendar__tile:hover {
+  background-color: #3a3a3a;
+}
