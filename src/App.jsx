@@ -4,21 +4,28 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Layout from './pages/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import PublicRoute from './components/PublicRoute';
+import InventoryPage from './pages/InventoryPage';
+import ProductsPage from './pages/ProductsPage';
+import UsersPage from './pages/UsersPage';
+import PurchasesPage from './pages/PurchasesPage';
 
 function App() {
   return (
     <Routes>
-      {/* Ruta Pública */}
-      <Route path="/login" element={<Login />} />
+      {/* Rutas Públicas (Solo para no autenticados) */}
+      <Route element={<PublicRoute />}>
+        <Route path="/login" element={<Login />} />
+      </Route>
 
-      {/* Rutas Protegidas */}
+      {/* Rutas Protegidas (Solo para autenticados) */}
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<Layout />}>
-          {/* La ruta raíz anidada dentro del layout */}
-          <Route index element={<Dashboard />} /> 
-          {/* Aquí añadirás más rutas protegidas en el futuro */}
-          {/* <Route path="/inventory" element={<InventoryPage />} /> */}
-          {/* <Route path="/users" element={<UsersPage />} /> */}
+          <Route index element={<Dashboard />} />
+          <Route path="/inventory" element={<InventoryPage />} />
+          <Route path="/products" element={<ProductsPage />} />
+          <Route path="/users" element={<UsersPage />} />
+          <Route path="/purchases" element={<PurchasesPage />} />
         </Route>
       </Route>
     </Routes>
