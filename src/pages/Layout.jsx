@@ -72,12 +72,12 @@ const Layout = () => {
       <Sidebar>
         <h2>Jhon Carnes</h2>
         <NavList>
-          <li><NavItem to="/">Dashboard</NavItem></li>
           <li><NavItem to="/inventory">Inventario</NavItem></li>
           
           {/* Enlaces solo para Administradores */}
           {user && user.role === 'ADMIN' && (
             <>
+              <li><NavItem to="/">Panel</NavItem></li>
               <li><NavItem to="/users">Usuarios</NavItem></li>
               <li><NavItem to="/products">Productos</NavItem></li>
               <li><NavItem to="/purchases">Compras</NavItem></li>

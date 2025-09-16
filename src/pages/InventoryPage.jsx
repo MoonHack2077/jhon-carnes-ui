@@ -30,7 +30,9 @@ const InventoryPage = () => {
     const fetchMonthData = async () => {
       const year = viewDate.getFullYear();
       const month = viewDate.getMonth();
+      console.log({year, month});
       const data = await getInventoriesByMonth(year, month);
+      console.log({data});
       setInventories(data);
     };
     fetchMonthData();
@@ -56,7 +58,10 @@ const InventoryPage = () => {
 const tileContent = ({ date, view }) => {
   if (view === 'month') {
     const dateString = date.toISOString().split('T')[0];
+    const inventoriesDate = inventories.map(inv => inv.date.split('T')[0]);
+    // console.log({inventoriesDate, dateString});
     const inventoryForDay = inventories.find(inv => inv.date.startsWith(dateString));
+    // console.log({inventoryForDay, dateString});
     if (inventoryForDay) {
       const color = inventoryForDay.status === 'ACTIVE' ? '#FFC700' : '#FF1E1E';
       return <Dot style={{ backgroundColor: color }} />;
