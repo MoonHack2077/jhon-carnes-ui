@@ -5,8 +5,12 @@ const getAuthHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-export const getPurchases = async () => {
-  const response = await apiClient.get('/purchases', { headers: getAuthHeaders() });
+export const getPurchases = async (startDate, endDate) => {
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate.toISOString());
+  if (endDate) params.append('endDate', endDate.toISOString());
+
+  const response = await apiClient.get(`/purchases?${params.toString()}`, { headers: getAuthHeaders() });
   return response.data;
 };
 

@@ -4,6 +4,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getInventoryById, getInventoryTemplate, createInventory, updateInventory, closeInventory } from '../services/inventoryService.js';
 import { getUsers } from '../services/userService.js';
 import { getProducts } from '../services/productService.js';
+import { uploadFile } from '../services/uploadService';
 import { getPurchasesByInventory, createPurchase, updatePurchase, deletePurchase } from '../services/purchaseService.js';
 
 import Button from '../ui/Button.jsx';
@@ -93,6 +94,7 @@ const InventoryForm = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [isUploading, setIsUploading] = useState(false); // Estado para feedback visual
 
   useEffect(() => {
     const loadData = async () => {
@@ -266,6 +268,32 @@ const InventoryForm = () => {
     }
   };
 
+  const handleFileUpload = async (e, index) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const imageUrl = await uploadFile(file);
+
+      // Actualiza la compra existente con la nueva URL de la imagen
+      const expenseToUpdate = dailyExpenses[index];
+      const updatedData = { ...expenseToUpdate, invoiceEvidenceUrl: imageUrl };
+      await updatePurchase(expenseToUpdate._id, updatedData);
+
+      // Actualiza el estado local para que la UI refleje el cambio
+      const updatedExpenses = [...dailyExpenses];
+      updatedExpenses[index].invoiceEvidenceUrl = imageUrl;
+      setDailyExpenses(updatedExpenses);
+
+    } catch (error) {
+      alert("Error al subir la imagen.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+
   if (loading) return <p>Cargando...</p>;
   if (error) return <p style={{ color: 'red' }}>{error}</p>;
   if (!inventory) return <p>No hay datos para mostrar.</p>;
@@ -310,28 +338,49 @@ const InventoryForm = () => {
         <FormSection>
           <SectionTitle>Gastos del Día</SectionTitle>
           {dailyExpenses.map((item, index) => (
-            <DynamicRow key={item._id} style={{ gridTemplateColumns: '2fr 1fr auto' }}>
-              <Input
-                type="text"
-                name="description"
-                placeholder="Descripción del gasto"
-                defaultValue={item.items[0]?.name || ''}
-                onBlur={e => handleExpenseChange(e, index)} // Usamos onBlur para no llamar a la API en cada tecla
-              />
-              <Input
-                type="number"
-                name="amount"
-                placeholder="Monto"
-                defaultValue={item.total || 0}
-                onBlur={e => handleExpenseChange(e, index)}
-              />
-              <DeleteButton type="button" onClick={() => handleDeleteExpense(index)}>X</DeleteButton>
-            </DynamicRow>
+            <div key={item._id}>
+              <DynamicRow style={{ gridTemplateColumns: '2fr 1fr auto' }}>
+                <Input
+                  type="text"
+                  name="description"
+                  placeholder="Descripción del gasto"
+                  defaultValue={item.items[0]?.name || ''}
+                  onBlur={e => handleExpenseChange(e, index)}
+                />
+                <Input
+                  type="number"
+                  name="amount"
+                  placeholder="Monto"
+                  defaultValue={item.total || 0}
+                  onBlur={e => handleExpenseChange(e, index)}
+                />
+                <DeleteButton type="button" onClick={() => handleDeleteExpense(index)}>X</DeleteButton>
+              </DynamicRow>
+              <div style={{ marginTop: '8px' }}>
+                <Input
+                  type="file"
+                  onChange={(e) => handleFileUpload(e, index)}
+                  style={{ fontSize: '0.8rem', padding: '5px' }}
+                />
+                {item.invoiceEvidenceUrl && (
+                  <a
+                    href={item.invoiceEvidenceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ marginLeft: '16px', color: '#00BFFF', textDecoration: 'none' }}
+                  >
+                    Ver Soporte
+                  </a>
+                )}
+              </div>
+            </div>
           ))}
-          <Button type="button" onClick={handleAddExpense} disabled={!inventory._id}>
-            + Añadir Gasto
+          <Button type="button" onClick={handleAddExpense} disabled={!inventory._id || isUploading}>
+            {isUploading ? 'Subiendo...' : '+ Añadir Gasto'}
           </Button>
-          {!inventory._id && <Label style={{ fontSize: '0.8rem', textAlign: 'center' }}>Guarda el inventario por primera vez para poder añadir gastos.</Label>}
+          {!inventory._id && <Label style={{ fontSize: '0.8rem', textAlign: 'center' }}>
+            Guarda el inventario por primera vez para poder añadir gastos.
+          </Label>}
         </FormSection>
 
         <FormSection>
@@ -378,6 +427,7 @@ const InventoryForm = () => {
             <InputGroup><Label>Gaseosas para Salsa</Label><Input type="number" name="sodaForSauce" value={inventory.sodaForSauce || ''} onChange={handleChange} /></InputGroup>
           </Grid>
         </FormSection>
+
         <FormSection>
           <SectionTitle>Descuentos</SectionTitle>
           {inventory.discounts?.map((item, index) => (
