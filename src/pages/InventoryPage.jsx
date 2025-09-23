@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Calendar from 'react-calendar';
 import styled from 'styled-components';
 import { getInventoriesByMonth } from '../services/inventoryService';
+import { useAuth } from '../context/AuthContext';
 
 const CalendarContainer = styled.div`
   .react-calendar {
@@ -22,6 +23,7 @@ const Dot = styled.div`
 `;
 
 const InventoryPage = () => {
+  const { user } = useAuth();
   const [viewDate, setViewDate] = useState(new Date());
   const [inventories, setInventories] = useState([]);
   const navigate = useNavigate();
@@ -30,9 +32,9 @@ const InventoryPage = () => {
     const fetchMonthData = async () => {
       const year = viewDate.getFullYear();
       const month = viewDate.getMonth();
-      console.log({year, month});
+      console.log({ year, month });
       const data = await getInventoriesByMonth(year, month);
-      console.log({data});
+      console.log({ data });
       setInventories(data);
     };
     fetchMonthData();
@@ -40,35 +42,42 @@ const InventoryPage = () => {
 
   const activeInventory = inventories.find(inv => inv.status === 'ACTIVE');
 
-  const handleDayClick = (date) => {
-  const dateString = date.toISOString().split('T')[0];
-  const inventoryForDay = inventories.find(inv => inv.date.startsWith(dateString));
-  
-  if (inventoryForDay) {
-    navigate(`/inventory/form/${inventoryForDay._id}`);
-  } else {
-    if (activeInventory) {
-      alert(`Debes cerrar el inventario activo del día ${new Date(activeInventory.date).toLocaleDateString()} antes de crear uno nuevo.`);
-    } else {
-      navigate(`/inventory/form/new?date=${dateString}`);
-    }
-  }
-};
+  const findInventoryForDate = (date) => {
+    // 1. Crea un string 'YYYY-MM-DD' para el día del calendario (en tu hora local)
+    const localDateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    
+    // 2. Busca un inventario cuya fecha (guardada en UTC) comience con ese mismo string
+    return inventories.find(inv => inv.date.startsWith(localDateString));
+  };
 
-const tileContent = ({ date, view }) => {
-  if (view === 'month') {
-    const dateString = date.toISOString().split('T')[0];
-    const inventoriesDate = inventories.map(inv => inv.date.split('T')[0]);
-    // console.log({inventoriesDate, dateString});
-    const inventoryForDay = inventories.find(inv => inv.date.startsWith(dateString));
-    // console.log({inventoryForDay, dateString});
+  const handleDayClick = (date) => {
+    // Usa la función de ayuda
+    const inventoryForDay = findInventoryForDate(date);
+    
     if (inventoryForDay) {
-      const color = inventoryForDay.status === 'ACTIVE' ? '#FFC700' : '#FF1E1E';
-      return <Dot style={{ backgroundColor: color }} />;
+      navigate(`/inventory/form/${inventoryForDay._id}`);
+    } else {
+      if (activeInventory) {
+        alert(`Debes cerrar el inventario activo del día ${new Date(activeInventory.date).toLocaleDateString()} antes de crear uno nuevo.`);
+      } else {
+        const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        navigate(`/inventory/form/new?date=${dateString}`);
+      }
     }
-  }
-  return null;
-};
+  };
+
+
+  const tileContent = ({ date, view }) => {
+    if (view === 'month') {
+      // Usa la misma función de ayuda
+      const inventoryForDay = findInventoryForDate(date);
+      if (inventoryForDay) {
+        const color = inventoryForDay.status === 'ACTIVE' ? '#FFC700' : '#FF1E1E';
+        return <Dot style={{ backgroundColor: color }} />;
+      }
+    }
+    return null;
+  };
 
   return (
     <div>

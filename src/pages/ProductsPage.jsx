@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import Modal from 'react-modal';
-import { getProducts, createProduct, deleteProduct } from '../services/productService'; // 👈 Importa createProduct
+import { getProducts, createProduct, deleteProduct, updateProduct } from '../services/productService'; // 👈 Importa createProduct
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { theme } from '../theme/theme';
@@ -49,9 +49,10 @@ const Td = styled.td`
 const ProductsPage = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  // --- NUEVOS ESTADOS para el modal y el formulario ---
+  // --- ESTADOS ACTUALIZADOS ---
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: '', price: '', description: '' });
+  const [formData, setFormData] = useState({});
+  const [editingProduct, setEditingProduct] = useState(null); // Si tiene datos -> editando
   const [error, setError] = useState('');
 
   const fetchProducts = async () => {
@@ -80,37 +81,54 @@ const ProductsPage = () => {
     }
   };
 
-  // --- NUEVAS FUNCIONES para controlar el modal ---
-  const openModal = () => setIsModalOpen(true);
+  // --- FUNCIONES DEL MODAL ACTUALIZADAS ---
+  const openModalForCreate = () => {
+    setEditingProduct(null);
+    setFormData({ name: '', price: '', description: '' });
+    setIsModalOpen(true);
+  };
+
+  const openModalForEdit = (product) => {
+    setEditingProduct(product);
+    setFormData(product);
+    setIsModalOpen(true);
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
+    setEditingProduct(null);
+    setFormData({});
     setError('');
-    setNewProduct({ name: '', price: '', description: '' });
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewProduct(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     try {
-      await createProduct(newProduct);
+      if (editingProduct) {
+        // Lógica de Edición
+        await updateProduct(editingProduct._id, formData);
+      } else {
+        // Lógica de Creación
+        await createProduct(formData);
+      }
       closeModal();
-      fetchProducts(); // Recarga la lista de productos
+      fetchProducts();
     } catch (err) {
-      setError(err.message || 'Error al crear el producto.');
+      setError(err.message || 'Error al guardar el producto.');
     }
   };
-
 
   if (isLoading) return <p>Cargando productos...</p>;
 
   return (
     <ProductsContainer>
       <Title>Gestión de Productos</Title>
-      <Button onClick={openModal}>+ Nuevo Producto</Button>
+      <Button onClick={openModalForCreate}>+ Nuevo Producto</Button>
 
       <Table>
         <thead>
@@ -126,8 +144,8 @@ const ProductsPage = () => {
               <Td>{product.name}</Td>
               <Td>${product.price.toLocaleString('es-CO')}</Td>
               <Td>
-                <Button onClick={() => alert(`Editar ${product.name}`)} style={{marginRight: '8px'}}>Editar</Button>
-                <Button onClick={() => handleDelete(product._id)} style={{backgroundColor: '#E74C3C'}}>Eliminar</Button>
+                <Button onClick={() => openModalForEdit(product)} style={{ marginRight: '8px' }}>✏️</Button>
+                <Button onClick={() => handleDelete(product._id)} style={{ backgroundColor: '#E74C3C' }}>🗑️</Button>
               </Td>
             </tr>
           ))}
@@ -135,19 +153,16 @@ const ProductsPage = () => {
       </Table>
 
       {/* --- NUEVO MODAL para crear productos --- */}
-      <Modal
-        isOpen={isModalOpen}
-        onRequestClose={closeModal}
-        style={customModalStyles}
-        contentLabel="Crear Nuevo Producto"
-      >
-        <h2>Crear Nuevo Producto</h2>
+      <Modal isOpen={isModalOpen} onRequestClose={closeModal} style={customModalStyles}>
+        <h2>{editingProduct ? 'Editar Producto' : 'Crear Nuevo Producto'}</h2>
         {error && <p style={{color: 'red'}}>{error}</p>}
         <form onSubmit={handleFormSubmit}>
-          <Input name="name" placeholder="Nombre del producto" value={newProduct.name} onChange={handleInputChange} required />
-          <Input name="price" type="number" placeholder="Precio" value={newProduct.price} onChange={handleInputChange} required />
-          <Input as="textarea" name="description" placeholder="Descripción (opcional)" value={newProduct.description} onChange={handleInputChange} />
-          <Button type="submit" style={{marginTop: '16px'}}>Crear Producto</Button>
+          <Input name="name" placeholder="Nombre del producto" value={formData.name || ''} onChange={handleInputChange} required />
+          <Input name="price" type="number" placeholder="Precio" value={formData.price || ''} onChange={handleInputChange} required />
+          <Input as="textarea" name="description" placeholder="Descripción (opcional)" value={formData.description || ''} onChange={handleInputChange} />
+          <Button type="submit" style={{marginTop: '16px'}}>
+            {editingProduct ? 'Guardar Cambios' : 'Crear Producto'}
+          </Button>
         </form>
       </Modal>
     </ProductsContainer>

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
+import RegisterSaleModal from './RegisterSaleModal';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getInventoryById, getInventoryTemplate, createInventory, updateInventory, closeInventory } from '../services/inventoryService.js';
 import { getUsers } from '../services/userService.js';
@@ -9,6 +10,9 @@ import { getPurchasesByInventory, createPurchase, updatePurchase, deletePurchase
 
 import Button from '../ui/Button.jsx';
 import Input from '../ui/Input.jsx';
+import Select from '../ui/Select.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
+import { theme } from '../theme/theme.js';
 
 // --- Estilos ---
 const InventoryContainer = styled.div`
@@ -64,9 +68,10 @@ const Label = styled.label`
 `;
 
 const DynamicRow = styled.div`
-  display: grid;
-  grid-template-columns: 2fr 1fr auto auto;
-  gap: ${props => props.theme.spacing.small};
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  gap: ${props => props.theme.spacing.medium};
   align-items: center;
   margin-bottom: ${props => props.theme.spacing.small};
 `;
@@ -80,6 +85,7 @@ const DeleteButton = styled.button`
   height: 30px;
   cursor: pointer;
   font-weight: bold;
+  padding: 0;
 `;
 
 
@@ -95,6 +101,16 @@ const InventoryForm = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false); // Estado para feedback visual
+  const { user } = useAuth();
+  const [isSaleModalOpen, setIsSaleModalOpen] = useState(false)
+
+  const refreshInventoryData = async () => {
+    // Función para recargar los datos del inventario actual
+    if (inventory?._id) {
+      const data = await getInventoryById(inventory._id);
+      setInventory(data);
+    }
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -141,6 +157,28 @@ const InventoryForm = () => {
     loadData();
   }, [id, searchParams]);
 
+  const salesTotals = useMemo(() => {
+    if (!inventory?.sales) {
+      return { cash: 0, transfer: 0 };
+    }
+
+    return inventory.sales.reduce((totals, sale) => {
+      // Solo suma el total si la venta NO es una cortesía en su totalidad
+      const saleTotal = sale.items
+        .filter(item => !item.isCourtesy)
+        .reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+
+      if (sale.paymentMethod === 'CASH') {
+        totals.cash += saleTotal;
+      } else if (sale.paymentMethod === 'TRANSFER') {
+        totals.transfer += saleTotal;
+      }
+      console.log('salesTotals recalculado:', totals);
+      return totals;
+
+    }, { cash: 0, transfer: 0 });
+  }, [inventory?.sales]); // Se recalcula solo si las ventas cambian
+
 
   // --- MANEJADORES DE ESTADO SIMPLIFICADOS ---
 
@@ -171,10 +209,10 @@ const InventoryForm = () => {
       }
       // Si el campo que cambió es 'description' (o sea, se eligió un producto)...
       if (name === 'description') {
-        const selectedProduct = products.find(p => p.name === value);
-        if (selectedProduct) {
+        const SelectedProduct = products.find(p => p.name === value);
+        if (SelectedProduct) {
           // ...automáticamente ponemos su precio en el campo 'value'.
-          currentItem.value = selectedProduct.price;
+          currentItem.value = SelectedProduct.price;
         }
       }
     }
@@ -300,9 +338,18 @@ const InventoryForm = () => {
 
   return (
     <InventoryContainer>
+      {/* --- RENDERIZADO DEL MODAL DE VENTA --- */}
+      {inventory && <RegisterSaleModal
+        isOpen={isSaleModalOpen}
+        onClose={() => setIsSaleModalOpen(false)}
+        products={products}
+        inventoryId={inventory._id}
+        onSaleRegistered={refreshInventoryData}
+      />}
       <Title>Registro de Inventario Diario</Title>
 
       <Form onSubmit={handleSubmit}>
+        {/** BASE Y FECHA  */}
         <FormSection>
           <SectionTitle>Base y Fecha</SectionTitle>
           <Grid>
@@ -311,30 +358,92 @@ const InventoryForm = () => {
           </Grid>
         </FormSection>
 
+        {/** INVENTARIO INICIAL  */}
         <FormSection>
           <SectionTitle>Inicio</SectionTitle>
           <Grid>
-            <InputGroup><Label>Arepas Inicial</Label><Input type="number" name="arepasInitial" value={inventory.start.arepasInitial || ''} onChange={e => handleChange(e, 'start')} /></InputGroup>
-            <InputGroup><Label>Arepas Nuevas</Label><Input type="number" name="arepasNew" value={inventory.start.arepasNew || ''} onChange={e => handleChange(e, 'start')} /></InputGroup>
-            <InputGroup><Label>Panes Inicial</Label><Input type="number" name="panesInitial" value={inventory.start.panesInitial || ''} onChange={e => handleChange(e, 'start')} /></InputGroup>
-            <InputGroup><Label>Panes Nuevos</Label><Input type="number" name="panesNew" value={inventory.start.panesNew || ''} onChange={e => handleChange(e, 'start')} /></InputGroup>
-            <InputGroup><Label>Gaseosas Inicial</Label><Input type="number" name="gaseosasInitial" value={inventory.start.gaseosasInitial || ''} onChange={e => handleChange(e, 'start')} /></InputGroup>
-            <InputGroup><Label>Gaseosas Nuevas</Label><Input type="number" name="gaseosasNew" value={inventory.start.gaseosasNew || ''} onChange={e => handleChange(e, 'start')} /></InputGroup>
-            <InputGroup><Label>Aguas Inicial</Label><Input type="number" name="aguasInitial" value={inventory.start.aguasInitial || ''} onChange={e => handleChange(e, 'start')} /></InputGroup>
-            <InputGroup><Label>Aguas Nuevas</Label><Input type="number" name="aguasNew" value={inventory.start.aguasNew || ''} onChange={e => handleChange(e, 'start')} /></InputGroup>
+            <InputGroup><Label>Arepas Inicial</Label><Input type="number" name="arepasInitial" value={inventory.start?.arepasInitial || ''} onChange={e => handleChange(e, 'start')} /></InputGroup>
+            <InputGroup><Label>Arepas Nuevas</Label><Input type="number" name="arepasNew" value={inventory.start?.arepasNew || ''} onChange={e => handleChange(e, 'start')} /></InputGroup>
+            <InputGroup><Label>Panes Inicial</Label><Input type="number" name="panesInitial" value={inventory.start?.panesInitial || ''} onChange={e => handleChange(e, 'start')} /></InputGroup>
+            <InputGroup><Label>Panes Nuevos</Label><Input type="number" name="panesNew" value={inventory.start?.panesNew || ''} onChange={e => handleChange(e, 'start')} /></InputGroup>
+            <InputGroup><Label>Gaseosas Inicial</Label><Input type="number" name="gaseosasInitial" value={inventory.start?.gaseosasInitial || ''} onChange={e => handleChange(e, 'start')} /></InputGroup>
+            <InputGroup><Label>Gaseosas Nuevas</Label><Input type="number" name="gaseosasNew" value={inventory.start?.gaseosasNew || ''} onChange={e => handleChange(e, 'start')} /></InputGroup>
+            <InputGroup><Label>Aguas Inicial</Label><Input type="number" name="aguasInitial" value={inventory.start?.aguasInitial || ''} onChange={e => handleChange(e, 'start')} /></InputGroup>
+            <InputGroup><Label>Aguas Nuevas</Label><Input type="number" name="aguasNew" value={inventory.start?.aguasNew || ''} onChange={e => handleChange(e, 'start')} /></InputGroup>
           </Grid>
         </FormSection>
 
+        {/** VENTAS */}
+        <FormSection>
+          <SectionTitle>Ventas Registradas</SectionTitle>
+          {/* Botón para abrir el modal */}
+          <Button type="button" onClick={() => setIsSaleModalOpen(true)} disabled={!inventory?._id}>
+            + Registrar Nueva Venta
+          </Button>
+          {!inventory?._id && <Label>Guarda el inventario por primera vez para poder registrar ventas.</Label>}
+
+          {/* Lista de ventas del día */}
+          <div style={{ marginTop: '16px' }}>
+            {inventory?.sales?.map(sale => (
+              <div key={sale._id}>
+                {/* Aquí puedes mostrar un resumen de cada venta */}
+                <p>Venta de ${sale.total.toLocaleString('es-CO')} a las {new Date(sale.timestamp).toLocaleTimeString()}</p>
+                {
+                  sale.items.map((item, idx) => (
+                    <div key={idx} style={{ marginLeft: '16px' }}>
+                      <span>{item.quantity} x {item.productName} @ ${item.unitPrice.toLocaleString('es-CO')} c/u</span>
+                    </div>
+                  ))
+                }
+              </div>
+            ))}
+            {inventory?.sales?.length === 0 && <p>No hay ventas registradas para este día.</p>}
+          </div>
+        </FormSection>
+
+        {/** DINERO  */}
+        <FormSection>
+          <SectionTitle>Dinero</SectionTitle>
+          <Grid>
+
+            {/** TRANSFERENCIAS  */}
+            <InputGroup>
+              <Label>Total en Transferencias (Calculado)</Label>
+              {/* Este campo ahora es de solo lectura y muestra el total calculado */}
+              <Input
+                type="text"
+                name="totalTransfers"
+                value={`$${salesTotals.transfer.toLocaleString('es-CO')}`}
+                style={{ fontWeight: 'bold', color: theme.colors.accent }}
+              />
+            </InputGroup>
+            {/** EFECTIVO  */}
+            <InputGroup>
+              <Label>Total en Efectivo</Label>
+              {/* Este campo ahora es de solo lectura y muestra el total calculado */}
+              <Input
+                type="text"
+                name="totalTransfers"
+                value={`$${salesTotals.cash.toLocaleString('es-CO')}`}
+                style={{ fontWeight: 'bold', color: theme.colors.accent }}
+              />
+            </InputGroup>
+
+          </Grid>
+        </FormSection>
+
+        {/** INVENTARIO FINAL  */}
         <FormSection>
           <SectionTitle>Final</SectionTitle>
           <Grid>
-            <InputGroup><Label>Arepas Restantes</Label><Input type="number" name="arepasRemaining" value={inventory.end.arepasRemaining || ''} onChange={e => handleChange(e, 'end')} /></InputGroup>
-            <InputGroup><Label>Panes Restantes</Label><Input type="number" name="panesRemaining" value={inventory.end.panesRemaining || ''} onChange={e => handleChange(e, 'end')} /></InputGroup>
-            <InputGroup><Label>Gaseosas Restantes</Label><Input type="number" name="gaseosasRemaining" value={inventory.end.gaseosasRemaining || ''} onChange={e => handleChange(e, 'end')} /></InputGroup>
-            <InputGroup><Label>Aguas Restantes</Label><Input type="number" name="aguasRemaining" value={inventory.end.aguasRemaining || ''} onChange={e => handleChange(e, 'end')} /></InputGroup>
+            <InputGroup><Label>Arepas Restantes</Label><Input type="number" name="arepasRemaining" value={inventory.end?.arepasRemaining || ''} onChange={e => handleChange(e, 'end')} /></InputGroup>
+            <InputGroup><Label>Panes Restantes</Label><Input type="number" name="panesRemaining" value={inventory.end?.panesRemaining || ''} onChange={e => handleChange(e, 'end')} /></InputGroup>
+            <InputGroup><Label>Gaseosas Restantes</Label><Input type="number" name="gaseosasRemaining" value={inventory.end?.gaseosasRemaining || ''} onChange={e => handleChange(e, 'end')} /></InputGroup>
+            <InputGroup><Label>Aguas Restantes</Label><Input type="number" name="aguasRemaining" value={inventory.end?.aguasRemaining || ''} onChange={e => handleChange(e, 'end')} /></InputGroup>
           </Grid>
         </FormSection>
 
+        {/** GASTOS DEL DIA  */}
         <FormSection>
           <SectionTitle>Gastos del Día</SectionTitle>
           {dailyExpenses.map((item, index) => (
@@ -383,21 +492,7 @@ const InventoryForm = () => {
           </Label>}
         </FormSection>
 
-        <FormSection>
-          <SectionTitle>Nómina</SectionTitle>
-          {inventory.payroll.map((item, index) => (
-            <DynamicRow key={index} style={{ gridTemplateColumns: '2fr 1fr auto' }}>
-              <select value={item.employeeId} name="employeeId" onChange={e => handleArrayChange(e, index, 'payroll')}>
-                <option value="">Seleccione empleado</option>
-                {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.firstName} {emp.lastName}</option>)}
-              </select>
-              <Input type="number" name="amountPaid" placeholder="Monto pagado" value={item.amountPaid} onChange={e => handleArrayChange(e, index, 'payroll')} />
-              <DeleteButton type="button" onClick={() => handleRemoveItem(index, 'payroll')}>X</DeleteButton>
-            </DynamicRow>
-          ))}
-          <Button type="button" onClick={() => handleAddItem('payroll', { employeeId: '', amountPaid: 0 })}>+ Añadir Pago</Button>
-        </FormSection>
-
+        {/** CONSUMO DE EMPLEADOS */}
         <FormSection>
           <SectionTitle>Consumo de Empleados</SectionTitle>
           {inventory.employeeConsumption.map((item, index) => {
@@ -405,12 +500,16 @@ const InventoryForm = () => {
             const subtotal = product ? product.price * (item.quantity || 0) : 0;
             return (
               <DynamicRow key={index}>
-                <select value={item.name} name="name" onChange={e => handleArrayChange(e, index, 'employeeConsumption')}>
-                  <option value="">Seleccione producto</option>
-                  {products.map(p => <option key={p._id} value={p.name}>{p.name}</option>)}
-                </select>
-                <Input type="number" name="quantity" placeholder="Cantidad" value={item.quantity || ''} onChange={e => handleArrayChange(e, index, 'employeeConsumption')} />
-                <Label>Valor: ${subtotal.toLocaleString('es-CO')}</Label>
+                <div>
+                  <Select value={item.name} name="name" onChange={e => handleArrayChange(e, index, 'employeeConsumption')}>
+                    <option value="">Seleccione producto</option>
+                    {products.map(p => <option key={p._id} value={p.name}>{p.name}</option>)}
+                  </Select>
+                  <div>
+                    <Input type="number" name="quantity" placeholder="Cantidad" value={item.quantity || ''} onChange={e => handleArrayChange(e, index, 'employeeConsumption')} />
+                    <Label>Valor: ${subtotal.toLocaleString('es-CO')}</Label>
+                  </div>
+                </div>
                 <DeleteButton type="button" onClick={() => handleRemoveItem(index, 'employeeConsumption')}>X</DeleteButton>
               </DynamicRow>
             )
@@ -418,6 +517,7 @@ const InventoryForm = () => {
           <Button type="button" onClick={() => handleAddItem('employeeConsumption', { name: '', quantity: 0 })}>+ Añadir Consumo</Button>
         </FormSection>
 
+        {/** MERMAS  */}
         <FormSection>
           <SectionTitle>Mermas (Dañados)</SectionTitle>
           <Grid>
@@ -428,34 +528,24 @@ const InventoryForm = () => {
           </Grid>
         </FormSection>
 
+        {/** DESCUENTOS  */}
         <FormSection>
           <SectionTitle>Descuentos</SectionTitle>
           {inventory.discounts?.map((item, index) => (
-            <DynamicRow key={index} style={{ gridTemplateColumns: '2fr 1fr 1fr auto' }}>
-              <Input type="text" name="description" placeholder="Descripción" value={item.description || ''} onChange={e => handleArrayChange(e, index, 'discounts')} />
-              <Input type="number" name="originalAmount" placeholder="Monto Original" value={item.originalAmount || ''} onChange={e => handleArrayChange(e, index, 'discounts')} />
-              <Input type="number" name="finalAmount" placeholder="Monto Final" value={item.finalAmount || ''} onChange={e => handleArrayChange(e, index, 'discounts')} />
-              <DeleteButton type="button" onClick={() => handleRemoveItem(index, 'discounts')}>X</DeleteButton>
-            </DynamicRow>
+            <>
+              <DynamicRow key={index} style={{ gridTemplateColumns: '2fr 1fr 1fr auto' }}>
+                <Input type="text" name="description" placeholder="Descripción" value={item.description || ''} onChange={e => handleArrayChange(e, index, 'discounts')} />
+                <Input type="number" name="originalAmount" placeholder="Monto Original" value={item.originalAmount || ''} onChange={e => handleArrayChange(e, index, 'discounts')} />
+                <Input type="number" name="finalAmount" placeholder="Monto Final" value={item.finalAmount || ''} onChange={e => handleArrayChange(e, index, 'discounts')} />
+                <DeleteButton type="button" onClick={() => handleRemoveItem(index, 'discounts')}>X</DeleteButton>
+              </DynamicRow>
+              <hr />
+            </>
           ))}
           <Button type="button" onClick={() => handleAddItem('discounts', { description: '', originalAmount: 0, finalAmount: 0 })}>+ Añadir Descuento</Button>
         </FormSection>
 
-        <FormSection>
-          <SectionTitle>Cortesías</SectionTitle>
-          {inventory.courtesies?.map((item, index) => (
-            <DynamicRow key={index} style={{ gridTemplateColumns: '2fr 1fr auto' }}>
-              <select value={item.name || ''} name="name" onChange={e => handleArrayChange(e, index, 'courtesies')}>
-                <option value="">Seleccione producto</option>
-                {products.map(p => <option key={p._id} value={p.name}>{p.name}</option>)}
-              </select>
-              <Input type="number" name="quantity" placeholder="Cantidad" value={item.quantity || ''} onChange={e => handleArrayChange(e, index, 'courtesies')} />
-              <DeleteButton type="button" onClick={() => handleRemoveItem(index, 'courtesies')}>X</DeleteButton>
-            </DynamicRow>
-          ))}
-          <Button type="button" onClick={() => handleAddItem('courtesies', { name: '', quantity: 1 })}>+ Añadir Cortesía</Button>
-        </FormSection>
-
+        {/** COLABORACIONES  */}
         <FormSection>
           <SectionTitle>Colaboraciones</SectionTitle>
           {inventory.collaborations?.map((item, index) => (
@@ -468,25 +558,25 @@ const InventoryForm = () => {
                   value={item.personName || ''}
                   onChange={e => handleArrayChange(e, index, 'collaborations')}
                 />
-                <select
+                <Select
                   name="type"
                   value={item.type || 'PRODUCT'}
                   onChange={e => handleArrayChange(e, index, 'collaborations')}
                 >
                   <option value="PRODUCT">Producto</option>
                   <option value="CASH">Efectivo</option>
-                </select>
+                </Select>
 
                 {/* --- RENDERIZADO CONDICIONAL AQUÍ --- */}
                 {item.type === 'PRODUCT' ? (
-                  <select
+                  <Select
                     name="description" // Usamos 'description' para guardar el nombre del producto
                     value={item.description || ''}
                     onChange={e => handleArrayChange(e, index, 'collaborations')}
                   >
                     <option value="">Seleccione producto</option>
                     {products.map(p => <option key={p._id} value={p.name}>{p.name}</option>)}
-                  </select>
+                  </Select>
                 ) : (
                   <Input
                     type="number"
@@ -513,6 +603,7 @@ const InventoryForm = () => {
           </Button>
         </FormSection>
 
+        {/** PEDIDOS PROXIMO DIA  */}
         <FormSection>
           <SectionTitle>Pedidos Próximo Día</SectionTitle>
           {inventory.requestsForNextDay?.map((item, index) => (
@@ -525,24 +616,36 @@ const InventoryForm = () => {
           <Button type="button" onClick={() => handleAddItem('requestsForNextDay', { item: '', quantity: 1 })}>+ Añadir Pedido</Button>
         </FormSection>
 
+        {/** NOTAS  */}
         <FormSection>
           <SectionTitle>Notas</SectionTitle>
           <Input as="textarea" rows="4" name="notes" value={inventory.notes || ''} onChange={handleChange} placeholder="Anotaciones importantes del día..." />
         </FormSection>
 
-        <InputGroup>
-          <Label>Total en Transferencias</Label>
-          <Input type="number" name="totalTransfers" value={inventory.totalTransfers || ''} onChange={handleChange} />
-        </InputGroup>
-
-        <InputGroup>
-          <Label>Efectivo Final Entregado</Label>
-          <Input type="number" name="finalCash" value={inventory.finalCash || ''} onChange={handleChange} />
-        </InputGroup>
+        {user && user.role === 'ADMIN' && (
+          <>
+            <FormSection>
+              <SectionTitle>Nómina</SectionTitle>
+              {inventory.payroll.map((item, index) => (
+                <DynamicRow key={index} style={{ gridTemplateColumns: '2fr 1fr auto' }}>
+                  <div>
+                    <Select value={item.employeeId} name="employeeId" onChange={e => handleArrayChange(e, index, 'payroll')}>
+                      <option value="">Seleccione empleado</option>
+                      {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.firstName} {emp.lastName}</option>)}
+                    </Select>
+                    <Input type="number" name="amountPaid" placeholder="Monto pagado" value={item.amountPaid} onChange={e => handleArrayChange(e, index, 'payroll')} />
+                  </div>
+                  <DeleteButton type="button" onClick={() => handleRemoveItem(index, 'payroll')}>X</DeleteButton>
+                </DynamicRow>
+              ))}
+              <Button type="button" onClick={() => handleAddItem('payroll', { employeeId: '', amountPaid: 0 })}>+ Añadir Pago</Button>
+            </FormSection>
+          </>
+        )}
 
         <div>
           <Button type="submit">Guardar Cambios</Button>
-          {inventory.status === 'ACTIVE' && inventory._id && (
+          {inventory.status === 'ACTIVE' && inventory._id && user.role === 'ADMIN' && (
             <Button type="button" onClick={handleCloseInventory} style={{ backgroundColor: '#FFC700', marginLeft: '16px' }}>
               Cerrar Inventario
             </Button>

@@ -5,8 +5,9 @@ import { getDashboardSummary } from '../services/dashboardService';
 
 // --- Estilos ---
 const DashboardGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  /* grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); */
   gap: ${props => props.theme.spacing.large};
 `;
 
@@ -15,6 +16,7 @@ const StatBox = styled.div`
   padding: ${props => props.theme.spacing.medium};
   border-radius: ${props => props.theme.borderRadius};
   cursor: pointer; // Para el futuro modal
+  width: 90%;
 `;
 
 const StatTitle = styled.h3`
@@ -70,15 +72,16 @@ const Dashboard = () => {
 
       {isLoading ? <p>Calculando datos...</p> : summary && (
         <DashboardGrid>
-          <StatBox>
-            <StatTitle>Balance (Ingresos - Gastos)</StatTitle>
-            <StatValue>{formatCurrency(summary.balance)}</StatValue>
-          </StatBox>
+
           <StatBox>
             <StatTitle>Ingresos Totales</StatTitle>
             <p>Efectivo: {formatCurrency(summary.totalIncome.cash)}</p>
             <p>Transferencias: {formatCurrency(summary.totalIncome.transfers)}</p>
-            <p>Total: {formatCurrency(summary.totalIncome.cash + summary.totalIncome.transfers)}</p>
+            <StatBox>
+              <StatTitle>Ganancia Neta</StatTitle>
+              <StatValue>{formatCurrency(summary.totalRevenue)}</StatValue>
+            </StatBox>
+            {/* <p>Total: {formatCurrency(summary.totalRevenue)}</p> */}
           </StatBox>
           <StatBox>
             <StatTitle>Gastos Totales</StatTitle>
@@ -92,12 +95,32 @@ const Dashboard = () => {
           <StatBox>
             <StatTitle>Invertido en Colaboraciones</StatTitle>
             <StatValue>{formatCurrency(summary.totalCollaborationsValue)}</StatValue>
+            {/* --- LÓGICA AÑADIDA PARA MOSTRAR EL DESGLOSE --- */}
+            {summary.collaborationsByName && Object.entries(summary.collaborationsByName).map(([name, amount]) => (
+              <p key={name} style={{ margin: '4px 0', display: 'flex', justifyContent: 'space-between' }}>
+                <span>{name}:</span>
+                <strong>{formatCurrency(amount)}</strong>
+              </p>
+            ))}
           </StatBox>
 
           <StatBox>
             <StatTitle>Insumos Nuevos (Arepas y Panes)</StatTitle>
             <p>Arepas: {summary.suppliesUsed.arepas} unidades</p>
             <p>Panes: {summary.suppliesUsed.panes} unidades</p>
+          </StatBox>
+
+          <StatBox>
+            <StatTitle>Total Pagado en Nómina</StatTitle>
+            <StatValue>{formatCurrency(summary.totalPayroll)}</StatValue>
+            <hr />
+            {/* Usamos Object.entries para iterar sobre el desglose */}
+            {summary.payrollByEmployee && Object.entries(summary.payrollByEmployee).map(([name, amount]) => (
+              <p key={name} style={{ margin: '4px 0', display: 'flex', justifyContent: 'space-between' }}>
+                <span>{name}:</span>
+                <strong>{formatCurrency(amount)}</strong>
+              </p>
+            ))}
           </StatBox>
         </DashboardGrid>
       )}

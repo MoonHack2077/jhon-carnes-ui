@@ -83,3 +83,100 @@ button:focus-visible {
 .react-calendar__tile:hover {
   background-color: #3a3a3a;
 }
+
+select{
+  margin-bottom: 10px;
+}
+
+/* --- Estilos Personalizados para React Datepicker --- */
+
+/* Contenedor principal del calendario */
+.react-datepicker {
+  font-family: system-ui, sans-serif;
+  background-color: #2C2C2C; /* Gris Acero */
+  border: 1px solid #444;
+  border-radius: 8px;
+}
+
+/* Encabezado con el mes y los botones de navegación */
+.react-datepicker__header {
+  background-color: #1B1B1B; /* Negro Carbón */
+  border-bottom: 1px solid #444;
+}
+
+/* Color del texto del mes (ej. "septiembre") */
+.react-datepicker__current-month {
+  color: #F5F5F5; /* Blanco Hueso */
+  font-weight: bold;
+}
+
+/* Nombres de los días (LUN, MAR, etc.) */
+.react-datepicker__day-name {
+  color: #F5F5F5;
+  font-weight: bold;
+}
+
+/* Flechas de navegación */
+.react-datepicker__navigation-arrow {
+  border-color: #F5F5F5;
+}
+.react-datepicker__navigation:hover .react-datepicker__navigation-arrow {
+  border-color: #FF1E1E; /* Rojo Neón */
+}
+
+
+/* --- Casillas de los días --- */
+
+/* Estilo base para cada día */
+.react-datepicker__day {
+  color: #F5F5F5;
+}
+
+/* Cuando el mouse pasa por encima de un día */
+.react-datepicker__day:hover {
+  background-color: #3a3a3a;
+  border-radius: 50%;
+}
+
+/* Día seleccionado o dentro de un rango seleccionado */
+.react-datepicker__day--selected,
+.react-datepicker__day--in-selecting-range,
+.react-datepicker__day--in-range {
+  background-color: #FF1E1E; /* Rojo Neón */
+  color: white;
+  border-radius: 50%;
+}
+
+/* El día de HOY */
+.react-datepicker__day--today {
+  font-weight: bold;
+  border: 1px solid #FFC700; /* Amarillo Llama */
+  border-radius: 50%;
+}
+
+/* Días fuera del mes actual */
+.react-datepicker__day--outside-month {
+  color: #666;
+}
+
+/* --- Input Personalizado --- */
+/* Para que el input que muestra la fecha también coincida */
+.react-datepicker-wrapper input {
+  width: 100%;
+  padding: 12px;
+  background-color: #2C2C2C;
+  color: #F5F5F5;
+  border: 1px solid #444;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.react-datepicker__input-container {
+  position: relative;
+  width: 100%;
+  padding: 10px 20px;
+}
+
+.courtesy-checkbox {
+  cursor: not-allowed;
+}

@@ -129,8 +129,8 @@ const UsersPage = () => {
               <Td>{user.code}</Td>
               <Td>{user.role === 'ADMIN' ? 'Administrador' : 'Empleado'}</Td>
               <Td>
-                <Button onClick={() => alert(`Editar ${user.firstName}`)} style={{marginRight: '8px'}}>Editar</Button>
-                <Button onClick={() => handleDelete(user._id)} style={{backgroundColor: '#E74C3C'}}>Eliminar</Button>
+                <Button onClick={() => alert(`Editar ${user.firstName}`)} style={{marginRight: '8px'}}>✏️</Button>
+                <Button onClick={() => handleDelete(user._id)} style={{backgroundColor: '#E74C3C'}}>🗑️</Button>
               </Td>
             </tr>
           ))}

@@ -45,3 +45,13 @@ export const closeInventory = async (id, inventoryData) => { // 👈 Añade inve
   const response = await apiClient.patch(`/inventory/${id}/close`, inventoryData, { headers: getAuthHeaders() }); // 👈 Pasa los datos
   return response.data;
 };
+
+export const addSaleToInventory = async (inventoryId, saleData) => {
+  const response = await apiClient.post(`/inventory/${inventoryId}/sales`, saleData, { headers: getAuthHeaders() });
+  return response.data;
+};
+
+export const deleteSaleFromInventory = async (inventoryId, saleId) => {
+  const response = await apiClient.delete(`/inventory/${inventoryId}/sales/${saleId}`, { headers: getAuthHeaders() });
+  return response.data;
+};

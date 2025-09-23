@@ -211,8 +211,8 @@ const PurchasesPage = () => {
                 ) : 'No'}
               </Td>
               <Td>
-                <Button onClick={() => openModalForEdit(purchase)} style={{marginRight: '8px'}}>Editar</Button>
-                <Button onClick={() => handleDelete(purchase._id)} style={{backgroundColor: '#E74C3C'}}>Eliminar</Button>
+                <Button onClick={() => openModalForEdit(purchase)} style={{marginRight: '8px'}}>✏️</Button>
+                <Button onClick={() => handleDelete(purchase._id)} style={{backgroundColor: '#E74C3C'}}>🗑️</Button>
               </Td>
             </tr>
           ))}
